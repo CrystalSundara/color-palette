@@ -7,6 +7,7 @@ const exportBtn = document.getElementById('export-pdf');
 const overlay = document.getElementById('overlay');
 const overlayName = document.getElementById('overlay-name');
 const overlayHex = document.getElementById('overlay-hex');
+const overlayClose = document.getElementById('overlay-close');
 
 // Track which palettes are checked
 const checkedPalettes = new Set();
@@ -45,36 +46,33 @@ function getContrastColor(hex) {
   return relativeLuminance(hex) > 0.35 ? '#000000' : '#ffffff';
 }
 
-// --- Hue-family sort key ---
-// Returns [familyIndex, hue, lightness] so colors group perceptually:
-// 0=Blues, 1=Blue-Purples, 2=Purples/Mauves, 3=Pinks/Roses,
-// 4=Deep Pinks, 5=Wines/Berries, 6=Deep Purples, 7=Teals,
-// 8=Greens/Sages, 9=Cool Greys, 10=Warm Neutrals, 11=Light Neutrals,
-// 12=Darks/Navies (catch-all)
-function getFamilySort(hex) {
-  const [h, s, l] = hexToHsl(hex);
+// --- Utility: hex → CIE Lab ---
+function hexToLab(hex) {
+  const toLinear = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const r = toLinear(parseInt(hex.slice(1, 3), 16) / 255);
+  const g = toLinear(parseInt(hex.slice(3, 5), 16) / 255);
+  const b = toLinear(parseInt(hex.slice(5, 7), 16) / 255);
+  const X = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  const Y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+  const Z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  const L = 116 * f(Y) - 16;
+  const A = 500 * (f(X) - f(Y));
+  const B = 200 * (f(Y) - f(Z));
+  return [L, A, B];
+}
 
-  // Very low saturation → grey bucket
-  if (s < 0.07) {
-    if (l > 0.82) return [11, h, l];
-    const warm = h > 15 && h < 170;
-    return warm ? [10, h, l] : [9, h, l];
-  }
+function deltaE(hex1, hex2) {
+  const [L1, a1, b1] = hexToLab(hex1);
+  const [L2, a2, b2] = hexToLab(hex2);
+  return Math.sqrt((L1 - L2) ** 2 + (a1 - a2) ** 2 + (b1 - b2) ** 2);
+}
 
-  if (l > 0.85) return [11, h, l]; // very light
-
-  if (h >= 195 && h < 250 && l >= 0.38) return [0, h, l]; // Blues
-  if (h >= 240 && h < 280 && l >= 0.45) return [1, h, l]; // Blue-Purples
-  if (h >= 265 && h < 330 && l >= 0.5)  return [2, h, l]; // Purples/Mauves
-  if ((h >= 325 || h < 20) && l >= 0.55) return [3, h, l]; // Light Pinks
-  if ((h >= 310 || h < 15) && l >= 0.32 && l < 0.55) return [4, h, l]; // Deep Pinks
-  if ((h >= 295 || h < 15) && l < 0.32)  return [5, h, l]; // Wines/Berries
-  if (h >= 255 && h < 315)               return [6, h, l]; // Deep Purples
-  if (h >= 150 && h < 205 && l >= 0.3)   return [7, h, l]; // Teals
-  if (h >= 70  && h < 150 && l >= 0.3)   return [8, h, l]; // Greens/Sages
-  if (h >= 15  && h < 70)                return [10, h, l]; // Warm Neutrals
-
-  return [12, h, l]; // Darks/Navies
+function matchLabel(de) {
+  if (de < 5)  return 'Excellent';
+  if (de < 15) return 'Good';
+  if (de < 30) return 'Fair';
+  return 'Distant';
 }
 
 // --- Collect + sort colors ---
@@ -91,17 +89,58 @@ function getColors() {
   const mode = getSortMode();
   if (mode === 'hue') {
     colors = [...colors].sort((a, b) => hexToHsl(a.hex)[0] - hexToHsl(b.hex)[0]);
-  } else if (mode === 'family') {
-    colors = [...colors].sort((a, b) => {
-      const [fa, fha, fla] = getFamilySort(a.hex);
-      const [fb, fhb, flb] = getFamilySort(b.hex);
-      if (fa !== fb) return fa - fb;
-      if (fha !== fhb) return fha - fhb;
-      return fla - flb;
-    });
+  } else if (mode === 'lightness') {
+    colors = [...colors].sort((a, b) => hexToHsl(a.hex)[2] - hexToHsl(b.hex)[2]);
+  } else if (mode === 'name') {
+    colors = [...colors].sort((a, b) => a.name.localeCompare(b.name));
+  } else if (mode === 'saturation') {
+    colors = [...colors].sort((a, b) => hexToHsl(a.hex)[1] - hexToHsl(b.hex)[1]);
   }
   return colors;
 }
+
+// --- Color matcher ---
+const matchInput   = document.getElementById('match-input');
+const matchPreview = document.getElementById('match-preview');
+const matchResults = document.getElementById('match-results');
+
+function isValidHex(v) { return /^#[0-9a-fA-F]{6}$/.test(v); }
+
+function renderMatcher() {
+  const raw = matchInput.value.trim();
+  const hex = raw.startsWith('#') ? raw : '#' + raw;
+  if (!isValidHex(hex)) {
+    matchPreview.style.background = '';
+    matchPreview.style.display = 'none';
+    matchResults.innerHTML = '';
+    return;
+  }
+  matchPreview.style.background = hex;
+  matchPreview.style.display = 'block';
+
+  const allColors = [];
+  for (const name of checkedPalettes) allColors.push(...PALETTES[name]);
+
+  if (allColors.length === 0) {
+    matchResults.innerHTML = '<p class="match-empty">Select a palette first.</p>';
+    return;
+  }
+
+  const scored = allColors
+    .map(c => ({ ...c, de: deltaE(hex, c.hex) }))
+    .sort((a, b) => a.de - b.de)
+    .slice(0, 5);
+
+  matchResults.innerHTML = scored.map(c => `
+    <div class="match-row">
+      <span class="match-dot" style="background:${c.hex}"></span>
+      <span class="match-name" title="${c.name}">${c.name}</span>
+      <span class="match-label match-label--${matchLabel(c.de).toLowerCase()}">${matchLabel(c.de)}</span>
+    </div>
+  `).join('');
+}
+
+matchInput.addEventListener('input', renderMatcher);
 
 // --- Render grid ---
 function render() {
@@ -128,6 +167,7 @@ function render() {
       const contrast = getContrastColor(color.hex);
       overlayName.style.color = contrast;
       overlayHex.style.color = contrast;
+      overlayClose.style.color = contrast;
       overlay.style.display = 'flex';
     });
 
@@ -158,6 +198,7 @@ function buildSidebar() {
       if (cb.checked) checkedPalettes.add(name);
       else checkedPalettes.delete(name);
       render();
+      renderMatcher();
     });
 
     const lbl = document.createElement('label');
@@ -177,7 +218,7 @@ document.addEventListener('keydown', e => {
 });
 
 // --- Sort radios ---
-sortRadios.forEach(r => r.addEventListener('change', render));
+sortRadios.forEach(r => r.addEventListener('change', () => { render(); renderMatcher(); }));
 
 // --- PDF Export ---
 exportBtn.addEventListener('click', () => {
@@ -255,3 +296,4 @@ exportBtn.addEventListener('click', () => {
 // --- Init ---
 buildSidebar();
 render();
+renderMatcher();

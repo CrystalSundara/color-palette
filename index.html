@@ -17,7 +17,17 @@
           <span class="sort-label">Sort</span>
           <label class="radio-label"><input type="radio" name="sort" value="none" checked /> None</label>
           <label class="radio-label"><input type="radio" name="sort" value="hue" /> By Hue</label>
-          <label class="radio-label"><input type="radio" name="sort" value="family" /> By Hue Family</label>
+<label class="radio-label"><input type="radio" name="sort" value="lightness" /> By Lightness</label>
+          <label class="radio-label"><input type="radio" name="sort" value="name" /> By Name</label>
+          <label class="radio-label"><input type="radio" name="sort" value="saturation" /> By Saturation</label>
+        </div>
+        <div class="match-group">
+          <span class="sort-label">Match a Color</span>
+          <div class="match-input-row">
+            <input type="text" id="match-input" class="match-input" placeholder="#A3B2C1" maxlength="7" spellcheck="false" />
+            <div id="match-preview" class="match-preview"></div>
+          </div>
+          <div id="match-results" class="match-results"></div>
         </div>
         <button id="export-pdf">Export PDF</button>
       </div>
@@ -28,6 +38,7 @@
   </div>
 
   <div id="overlay" class="overlay" style="display:none;">
+    <button id="overlay-close">✕</button>
     <div class="overlay-info">
       <div id="overlay-hex" class="overlay-hex"></div>
       <div id="overlay-name" class="overlay-name"></div>
