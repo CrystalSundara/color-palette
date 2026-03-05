@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Palette</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>Color Palettes</h1>
+      <div id="palette-list" class="palette-list"></div>
+      <div class="sidebar-controls">
+        <div class="sort-group">
+          <span class="sort-label">Sort</span>
+          <label class="radio-label"><input type="radio" name="sort" value="none" checked /> None</label>
+          <label class="radio-label"><input type="radio" name="sort" value="hue" /> By Hue</label>
+          <label class="radio-label"><input type="radio" name="sort" value="family" /> By Hue Family</label>
+        </div>
+        <button id="export-pdf">Export PDF</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div id="color-grid" class="color-grid"></div>
+    </main>
+  </div>
+
+  <div id="overlay" class="overlay" style="display:none;">
+    <div class="overlay-info">
+      <div id="overlay-hex" class="overlay-hex"></div>
+      <div id="overlay-name" class="overlay-name"></div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
