@@ -142,6 +142,77 @@ function renderMatcher() {
 
 matchInput.addEventListener('input', renderMatcher);
 
+// --- Image color picker ---
+const imageUploadBtn    = document.getElementById('image-upload-btn');
+const imageUpload       = document.getElementById('image-upload');
+const imagePickerWrap   = document.getElementById('image-picker-wrap');
+const imagePickerCanvas = document.getElementById('image-picker-canvas');
+const imagePickerClear  = document.getElementById('image-picker-clear');
+
+imageUploadBtn.addEventListener('click', () => imageUpload.click());
+
+imageUpload.addEventListener('change', () => {
+  const file = imageUpload.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const maxW = 168, maxH = 140;
+    const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+    imagePickerCanvas.width  = Math.round(img.width  * scale);
+    imagePickerCanvas.height = Math.round(img.height * scale);
+    imagePickerCanvas.getContext('2d').drawImage(img, 0, 0, imagePickerCanvas.width, imagePickerCanvas.height);
+    URL.revokeObjectURL(url);
+    imagePickerWrap.style.display = 'block';
+    imageUploadBtn.style.display  = 'none';
+  };
+  img.src = url;
+  imageUpload.value = ''; // allow re-selecting the same file
+});
+
+// Shared helper: get pixel hex at a mouse event on the canvas
+function canvasHexAt(e) {
+  const rect = imagePickerCanvas.getBoundingClientRect();
+  const scaleX = imagePickerCanvas.width  / rect.width;
+  const scaleY = imagePickerCanvas.height / rect.height;
+  const x = Math.floor((e.clientX - rect.left) * scaleX);
+  const y = Math.floor((e.clientY - rect.top)  * scaleY);
+  const [r, g, b] = imagePickerCanvas.getContext('2d').getImageData(x, y, 1, 1).data;
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+const pickerHoverSwatch = document.getElementById('picker-hover-swatch');
+const pickerHoverColor  = document.getElementById('picker-hover-color');
+const pickerHoverHex    = document.getElementById('picker-hover-hex');
+
+imagePickerCanvas.addEventListener('mousemove', e => {
+  const hex = canvasHexAt(e);
+  pickerHoverColor.style.background = hex;
+  pickerHoverHex.textContent = hex.toUpperCase();
+  pickerHoverSwatch.style.left = (e.clientX + 14) + 'px';
+  pickerHoverSwatch.style.top  = (e.clientY + 14) + 'px';
+  pickerHoverSwatch.style.display = 'flex';
+});
+
+imagePickerCanvas.addEventListener('mouseleave', () => {
+  pickerHoverSwatch.style.display = 'none';
+});
+
+imagePickerCanvas.addEventListener('click', e => {
+  const hex = canvasHexAt(e);
+  pickerHoverSwatch.style.display = 'none';
+  matchInput.value = hex;
+  matchInput.dispatchEvent(new Event('input')); // triggers renderMatcher
+});
+
+imagePickerClear.addEventListener('click', () => {
+  imagePickerWrap.style.display = 'none';
+  imageUploadBtn.style.display  = 'block';
+  pickerHoverSwatch.style.display = 'none';
+  matchInput.value = '';
+  matchInput.dispatchEvent(new Event('input'));
+});
+
 // --- Render grid ---
 function render() {
   const colors = getColors();

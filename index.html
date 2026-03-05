@@ -23,11 +23,27 @@
         </div>
         <div class="match-group">
           <span class="sort-label">Match a Color</span>
+
+          <!-- Image picker -->
+          <input type="file" id="image-upload" accept="image/*" capture="environment" style="display:none" />
+          <div id="image-picker-wrap" class="image-picker-wrap" style="display:none">
+            <canvas id="image-picker-canvas" class="image-picker-canvas"></canvas>
+            <button id="image-picker-clear" class="image-picker-clear" title="Remove image">×</button>
+          </div>
+          <button id="image-upload-btn" class="image-upload-btn">Upload image</button>
+
+          <!-- Existing hex input row (unchanged) -->
           <div class="match-input-row">
             <input type="text" id="match-input" class="match-input" placeholder="#A3B2C1" maxlength="7" spellcheck="false" />
             <div id="match-preview" class="match-preview"></div>
           </div>
           <div id="match-results" class="match-results"></div>
+        </div>
+
+        <!-- Hover swatch: fixed, follows cursor, outside sidebar -->
+        <div id="picker-hover-swatch" class="picker-hover-swatch" style="display:none">
+          <div id="picker-hover-color" class="picker-hover-color"></div>
+          <span id="picker-hover-hex" class="picker-hover-hex"></span>
         </div>
         <button id="export-pdf">Export PDF</button>
       </div>
