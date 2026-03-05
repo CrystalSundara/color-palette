@@ -148,10 +148,39 @@ const imageUpload       = document.getElementById('image-upload');
 const imagePickerWrap   = document.getElementById('image-picker-wrap');
 const imagePickerCanvas = document.getElementById('image-picker-canvas');
 const imagePickerClear  = document.getElementById('image-picker-clear');
+const imagePickerZoom   = document.getElementById('image-picker-zoom');
+
+// Zoom/pan state
+let pickerImg  = null;
+let pickerZoom = 1;
+let pickerPanX = 0;
+let pickerPanY = 0;
+let pickerDragging  = false;
+let pickerDragStart = {};
+let pickerPointerMoved = false;
+let pickerPinchDist = null;
 
 imageUploadBtn.addEventListener('click', () => {
   imageUpload.click();
 });
+
+function drawPickerCanvas() {
+  const ctx = imagePickerCanvas.getContext('2d');
+  const viewW = pickerImg.width  / pickerZoom;
+  const viewH = pickerImg.height / pickerZoom;
+  pickerPanX = Math.max(0, Math.min(pickerImg.width  - viewW, pickerPanX));
+  pickerPanY = Math.max(0, Math.min(pickerImg.height - viewH, pickerPanY));
+  ctx.clearRect(0, 0, imagePickerCanvas.width, imagePickerCanvas.height);
+  ctx.drawImage(pickerImg, pickerPanX, pickerPanY, viewW, viewH,
+                           0, 0, imagePickerCanvas.width, imagePickerCanvas.height);
+  if (pickerZoom > 1.05) {
+    imagePickerZoom.textContent = pickerZoom.toFixed(1) + '×';
+    imagePickerZoom.style.display = 'block';
+  } else {
+    imagePickerZoom.style.display = 'none';
+  }
+  imagePickerCanvas.style.cursor = pickerZoom > 1 ? 'grab' : 'crosshair';
+}
 
 function handleImageFile(file) {
   if (!file) return;
@@ -162,7 +191,11 @@ function handleImageFile(file) {
     const scale = Math.min(maxW / img.width, maxH / img.height, 1);
     imagePickerCanvas.width  = Math.round(img.width  * scale);
     imagePickerCanvas.height = Math.round(img.height * scale);
-    imagePickerCanvas.getContext('2d').drawImage(img, 0, 0, imagePickerCanvas.width, imagePickerCanvas.height);
+    pickerImg  = img;
+    pickerZoom = 1;
+    pickerPanX = 0;
+    pickerPanY = 0;
+    drawPickerCanvas();
     URL.revokeObjectURL(url);
     imagePickerWrap.style.display = 'block';
     imageUploadBtn.style.display  = 'none';
@@ -191,6 +224,7 @@ const pickerHoverColor  = document.getElementById('picker-hover-color');
 const pickerHoverHex    = document.getElementById('picker-hover-hex');
 
 imagePickerCanvas.addEventListener('mousemove', e => {
+  if (pickerDragging) return;
   const hex = canvasHexAt(e);
   pickerHoverColor.style.background = hex;
   pickerHoverHex.textContent = hex.toUpperCase();
@@ -204,37 +238,142 @@ imagePickerCanvas.addEventListener('mouseleave', () => {
 });
 
 imagePickerCanvas.addEventListener('click', e => {
+  if (pickerDragging) return;
   const hex = canvasHexAt(e);
   pickerHoverSwatch.style.display = 'none';
   matchInput.value = hex;
-  matchInput.dispatchEvent(new Event('input')); // triggers renderMatcher
+  matchInput.dispatchEvent(new Event('input'));
 });
 
-// Touch support for canvas image picker
-imagePickerCanvas.addEventListener('touchmove', e => {
+// Mouse wheel zoom
+imagePickerCanvas.addEventListener('wheel', e => {
   e.preventDefault();
-  const touch = e.touches[0];
-  const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
-  pickerHoverColor.style.background = hex;
-  pickerHoverHex.textContent = hex.toUpperCase();
-  pickerHoverSwatch.style.left = (touch.clientX + 14) + 'px';
-  pickerHoverSwatch.style.top  = (touch.clientY + 14) + 'px';
-  pickerHoverSwatch.style.display = 'flex';
+  if (!pickerImg) return;
+  const rect = imagePickerCanvas.getBoundingClientRect();
+  const cssX = e.clientX - rect.left;
+  const cssY = e.clientY - rect.top;
+  const imgX = pickerPanX + (cssX / rect.width)  * (pickerImg.width  / pickerZoom);
+  const imgY = pickerPanY + (cssY / rect.height) * (pickerImg.height / pickerZoom);
+  const factor = e.deltaY < 0 ? 1.25 : 0.8;
+  pickerZoom = Math.max(1, Math.min(8, pickerZoom * factor));
+  pickerPanX = imgX - (cssX / rect.width)  * (pickerImg.width  / pickerZoom);
+  pickerPanY = imgY - (cssY / rect.height) * (pickerImg.height / pickerZoom);
+  drawPickerCanvas();
 }, { passive: false });
 
+// Mouse drag pan
+imagePickerCanvas.addEventListener('mousedown', e => {
+  if (pickerZoom <= 1) return;
+  pickerDragging = true;
+  pickerDragStart = { x: e.clientX, y: e.clientY, panX: pickerPanX, panY: pickerPanY };
+  imagePickerCanvas.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mousemove', e => {
+  if (!pickerDragging || !pickerImg) return;
+  const rect = imagePickerCanvas.getBoundingClientRect();
+  const dx = (e.clientX - pickerDragStart.x) / rect.width  * (pickerImg.width  / pickerZoom);
+  const dy = (e.clientY - pickerDragStart.y) / rect.height * (pickerImg.height / pickerZoom);
+  pickerPanX = pickerDragStart.panX - dx;
+  pickerPanY = pickerDragStart.panY - dy;
+  drawPickerCanvas();
+  pickerHoverSwatch.style.display = 'none';
+});
+
+document.addEventListener('mouseup', () => {
+  if (pickerDragging) {
+    pickerDragging = false;
+    imagePickerCanvas.style.cursor = pickerZoom > 1 ? 'grab' : 'crosshair';
+  }
+});
+
+// Double-click to reset zoom
+imagePickerCanvas.addEventListener('dblclick', () => {
+  pickerZoom = 1; pickerPanX = 0; pickerPanY = 0;
+  drawPickerCanvas();
+});
+
+// Touch support: pinch zoom + single-finger pan
+imagePickerCanvas.addEventListener('touchstart', e => {
+  pickerPointerMoved = false;
+  if (e.touches.length === 2) {
+    pickerPinchDist = Math.hypot(
+      e.touches[1].clientX - e.touches[0].clientX,
+      e.touches[1].clientY - e.touches[0].clientY
+    );
+  } else if (e.touches.length === 1 && pickerZoom > 1) {
+    pickerDragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY,
+                        panX: pickerPanX, panY: pickerPanY };
+  }
+}, { passive: true });
+
+imagePickerCanvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  pickerPointerMoved = true;
+  if (e.touches.length === 2 && pickerPinchDist !== null) {
+    const dist = Math.hypot(
+      e.touches[1].clientX - e.touches[0].clientX,
+      e.touches[1].clientY - e.touches[0].clientY
+    );
+    const ratio = dist / pickerPinchDist;
+    const rect = imagePickerCanvas.getBoundingClientRect();
+    const midCssX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+    const midCssY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+    const imgX = pickerPanX + (midCssX / rect.width)  * (pickerImg.width  / pickerZoom);
+    const imgY = pickerPanY + (midCssY / rect.height) * (pickerImg.height / pickerZoom);
+    pickerZoom = Math.max(1, Math.min(8, pickerZoom * ratio));
+    pickerPanX = imgX - (midCssX / rect.width)  * (pickerImg.width  / pickerZoom);
+    pickerPanY = imgY - (midCssY / rect.height) * (pickerImg.height / pickerZoom);
+    pickerPinchDist = dist;
+    drawPickerCanvas();
+    pickerHoverSwatch.style.display = 'none';
+  } else if (e.touches.length === 1) {
+    if (pickerZoom > 1) {
+      const rect = imagePickerCanvas.getBoundingClientRect();
+      const dx = (e.touches[0].clientX - pickerDragStart.x) / rect.width  * (pickerImg.width  / pickerZoom);
+      const dy = (e.touches[0].clientY - pickerDragStart.y) / rect.height * (pickerImg.height / pickerZoom);
+      pickerPanX = pickerDragStart.panX - dx;
+      pickerPanY = pickerDragStart.panY - dy;
+      drawPickerCanvas();
+      pickerHoverSwatch.style.display = 'none';
+    } else {
+      const touch = e.touches[0];
+      const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
+      pickerHoverColor.style.background = hex;
+      pickerHoverHex.textContent = hex.toUpperCase();
+      pickerHoverSwatch.style.left = (touch.clientX + 14) + 'px';
+      pickerHoverSwatch.style.top  = (touch.clientY + 14) + 'px';
+      pickerHoverSwatch.style.display = 'flex';
+    }
+  }
+}, { passive: false });
+
+let pickerLastTap = 0;
 imagePickerCanvas.addEventListener('touchend', e => {
   e.preventDefault();
-  const touch = e.changedTouches[0];
-  const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
-  pickerHoverSwatch.style.display = 'none';
-  matchInput.value = hex;
-  matchInput.dispatchEvent(new Event('input'));
+  if (e.touches.length < 2) pickerPinchDist = null;
+  const now = Date.now();
+  if (now - pickerLastTap < 300 && !pickerPointerMoved) {
+    pickerZoom = 1; pickerPanX = 0; pickerPanY = 0;
+    drawPickerCanvas();
+  } else if (e.touches.length === 0 && !pickerPointerMoved) {
+    const touch = e.changedTouches[0];
+    const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
+    pickerHoverSwatch.style.display = 'none';
+    matchInput.value = hex;
+    matchInput.dispatchEvent(new Event('input'));
+  } else {
+    pickerHoverSwatch.style.display = 'none';
+  }
+  pickerLastTap = now;
 });
 
 imagePickerClear.addEventListener('click', () => {
   imagePickerWrap.style.display = 'none';
   imageUploadBtn.style.display  = 'block';
   pickerHoverSwatch.style.display = 'none';
+  pickerZoom = 1; pickerPanX = 0; pickerPanY = 0; pickerImg = null;
+  imagePickerZoom.style.display = 'none';
   matchInput.value = '';
   matchInput.dispatchEvent(new Event('input'));
 });

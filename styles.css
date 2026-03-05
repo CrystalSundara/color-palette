@@ -298,6 +298,21 @@ body {
 
 .image-picker-clear:hover { background: rgba(0,0,0,0.82); }
 
+.image-picker-zoom {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.55);
+  color: #e0d8cc;
+  font-family: 'DM Mono', 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  display: none;
+}
+
 /* Export button */
 #export-pdf {
   margin: 18px 22px 24px;
