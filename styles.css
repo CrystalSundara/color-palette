@@ -339,6 +339,7 @@ body {
   grid-template-columns: repeat(auto-fill, 76px);
   gap: 22px;
   max-width: none;
+  justify-content: center;
 }
 
 /* Swatch */
@@ -486,4 +487,101 @@ body {
   font-weight: 300;
   color: var(--text-muted);
   padding: 24px 0;
+}
+
+/* ─── Mobile: collapsible sidebar ────────────────────── */
+.sidebar-toggle {
+  display: none; /* hidden on desktop */
+}
+.sidebar-backdrop {
+  display: none;
+}
+.sidebar-close {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    height: 100vh;
+    z-index: 500;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.45);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 450;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  .sidebar-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 400;
+    width: 38px;
+    height: 38px;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 6px;
+    color: var(--sidebar-text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    transition: background 0.15s;
+  }
+  .sidebar-toggle:hover { background: #1E1C17; }
+
+  .sidebar.no-transition { transition: none !important; }
+
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 4px;
+    color: var(--sidebar-muted);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    padding: 0 0 2px 0; /* optical centre for ‹ */
+  }
+  .sidebar-close:hover {
+    color: var(--sidebar-text);
+    border-color: var(--sidebar-muted);
+  }
+
+  .main {
+    padding-top: 68px; /* clear the toggle button */
+  }
 }

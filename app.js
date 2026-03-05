@@ -284,8 +284,43 @@ function buildSidebar() {
 
 // --- Overlay dismiss ---
 overlay.addEventListener('click', () => { overlay.style.display = 'none'; });
+
+// --- Mobile sidebar toggle ---
+const sidebarToggle   = document.getElementById('sidebar-toggle');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const sidebar         = document.querySelector('.sidebar');
+
+function closeSidebar() {
+  sidebar.classList.remove('is-open');
+  sidebarBackdrop.classList.remove('is-open');
+}
+
+function openSidebar() {
+  sidebar.classList.add('is-open');
+  sidebarBackdrop.classList.add('is-open');
+}
+
+// Open immediately on mobile — suppress the slide animation on cold load
+if (window.innerWidth <= 768) {
+  sidebar.classList.add('no-transition');
+  openSidebar();
+  requestAnimationFrame(() => sidebar.classList.remove('no-transition'));
+}
+
+const sidebarClose = document.getElementById('sidebar-close');
+
+sidebarToggle.addEventListener('click', () => {
+  sidebar.classList.toggle('is-open');
+  sidebarBackdrop.classList.toggle('is-open');
+});
+sidebarBackdrop.addEventListener('click', closeSidebar);
+sidebarClose.addEventListener('click', closeSidebar);
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') overlay.style.display = 'none';
+  if (e.key === 'Escape') {
+    overlay.style.display = 'none';
+    closeSidebar();
+  }
 });
 
 // --- Sort radios ---
