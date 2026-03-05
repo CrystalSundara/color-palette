@@ -32,6 +32,7 @@
 
           <!-- Image picker -->
           <input type="file" id="image-upload" accept="image/*" capture="environment" style="display:none" />
+          <input type="file" id="image-upload-gallery" accept="image/*" style="display:none" />
           <div id="image-picker-wrap" class="image-picker-wrap" style="display:none">
             <canvas id="image-picker-canvas" class="image-picker-canvas"></canvas>
             <button id="image-picker-clear" class="image-picker-clear" title="Remove image">×</button>
@@ -57,6 +58,19 @@
     <main class="main">
       <div id="color-grid" class="color-grid"></div>
     </main>
+  </div>
+
+  <div id="upload-action-sheet" class="upload-action-sheet" aria-hidden="true">
+    <div class="upload-action-backdrop"></div>
+    <div class="upload-action-menu">
+      <button id="action-camera" class="upload-action-btn">
+        <span class="action-icon">◉</span> Take photo
+      </button>
+      <button id="action-gallery" class="upload-action-btn">
+        <span class="action-icon">▦</span> Choose from library
+      </button>
+      <button id="action-cancel" class="upload-action-cancel">Cancel</button>
+    </div>
   </div>
 
   <div id="overlay" class="overlay" style="display:none;">
