@@ -210,6 +210,27 @@ imagePickerCanvas.addEventListener('click', e => {
   matchInput.dispatchEvent(new Event('input')); // triggers renderMatcher
 });
 
+// Touch support for canvas image picker
+imagePickerCanvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
+  pickerHoverColor.style.background = hex;
+  pickerHoverHex.textContent = hex.toUpperCase();
+  pickerHoverSwatch.style.left = (touch.clientX + 14) + 'px';
+  pickerHoverSwatch.style.top  = (touch.clientY + 14) + 'px';
+  pickerHoverSwatch.style.display = 'flex';
+}, { passive: false });
+
+imagePickerCanvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  const hex = canvasHexAt({ clientX: touch.clientX, clientY: touch.clientY });
+  pickerHoverSwatch.style.display = 'none';
+  matchInput.value = hex;
+  matchInput.dispatchEvent(new Event('input'));
+});
+
 imagePickerClear.addEventListener('click', () => {
   imagePickerWrap.style.display = 'none';
   imageUploadBtn.style.display  = 'block';
@@ -223,7 +244,7 @@ function render() {
   const colors = getColors();
   grid.innerHTML = '';
   if (colors.length === 0) {
-    grid.innerHTML = '<p class="empty-state">Select a palette to view colors.</p>';
+    grid.innerHTML = '<p class="empty-state">Tap ≡ to browse palettes.</p>';
     return;
   }
   for (const color of colors) {
@@ -305,12 +326,6 @@ function openSidebar() {
   sidebarBackdrop.classList.add('is-open');
 }
 
-// Open immediately on mobile — suppress the slide animation on cold load
-if (window.innerWidth <= 768) {
-  sidebar.classList.add('no-transition');
-  openSidebar();
-  requestAnimationFrame(() => sidebar.classList.remove('no-transition'));
-}
 
 const sidebarClose = document.getElementById('sidebar-close');
 
