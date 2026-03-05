@@ -143,54 +143,15 @@ function renderMatcher() {
 matchInput.addEventListener('input', renderMatcher);
 
 // --- Image color picker ---
-const imageUploadBtn     = document.getElementById('image-upload-btn');
-const imageUpload        = document.getElementById('image-upload');
-const imageUploadGallery = document.getElementById('image-upload-gallery');
-const imagePickerWrap    = document.getElementById('image-picker-wrap');
-const imagePickerCanvas  = document.getElementById('image-picker-canvas');
-const imagePickerClear   = document.getElementById('image-picker-clear');
-
-const uploadActionSheet   = document.getElementById('upload-action-sheet');
-const uploadActionBackdrop = uploadActionSheet.querySelector('.upload-action-backdrop');
-const actionCamera        = document.getElementById('action-camera');
-const actionGallery       = document.getElementById('action-gallery');
-const actionCancel        = document.getElementById('action-cancel');
-
-const isMobile = () => navigator.maxTouchPoints > 0;
-
-function showUploadActionSheet() {
-  uploadActionSheet.style.display = 'block';
-  uploadActionSheet.setAttribute('aria-hidden', 'false');
-  requestAnimationFrame(() => uploadActionSheet.classList.add('is-visible'));
-}
-
-function hideUploadActionSheet() {
-  uploadActionSheet.classList.remove('is-visible');
-  uploadActionSheet.setAttribute('aria-hidden', 'true');
-  setTimeout(() => { uploadActionSheet.style.display = 'none'; }, 250);
-}
+const imageUploadBtn    = document.getElementById('image-upload-btn');
+const imageUpload       = document.getElementById('image-upload');
+const imagePickerWrap   = document.getElementById('image-picker-wrap');
+const imagePickerCanvas = document.getElementById('image-picker-canvas');
+const imagePickerClear  = document.getElementById('image-picker-clear');
 
 imageUploadBtn.addEventListener('click', () => {
-  if (isMobile()) {
-    showUploadActionSheet();
-  } else {
-    imageUpload.click();
-  }
-});
-
-actionCamera.addEventListener('click', () => {
-  hideUploadActionSheet();
-  imageUpload.setAttribute('capture', 'environment');
   imageUpload.click();
 });
-
-actionGallery.addEventListener('click', () => {
-  hideUploadActionSheet();
-  imageUploadGallery.click();
-});
-
-actionCancel.addEventListener('click', hideUploadActionSheet);
-uploadActionBackdrop.addEventListener('click', hideUploadActionSheet);
 
 function handleImageFile(file) {
   if (!file) return;
@@ -212,11 +173,6 @@ function handleImageFile(file) {
 imageUpload.addEventListener('change', () => {
   handleImageFile(imageUpload.files[0]);
   imageUpload.value = '';
-});
-
-imageUploadGallery.addEventListener('change', () => {
-  handleImageFile(imageUploadGallery.files[0]);
-  imageUploadGallery.value = '';
 });
 
 // Shared helper: get pixel hex at a mouse event on the canvas
