@@ -553,6 +553,7 @@ body {
     touch-action: manipulation;
   }
   .sidebar-toggle:hover { background: #1E1C17; }
+  body:has(.sidebar.is-open) .sidebar-toggle { display: none; }
 
   .sidebar.no-transition { transition: none !important; }
 

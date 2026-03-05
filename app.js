@@ -327,6 +327,13 @@ function openSidebar() {
 }
 
 
+// Open sidebar immediately on mobile (z-index is now safe — toggle is 600, backdrop is 450)
+if (window.innerWidth <= 768) {
+  sidebar.classList.add('no-transition');
+  openSidebar();
+  requestAnimationFrame(() => sidebar.classList.remove('no-transition'));
+}
+
 const sidebarClose = document.getElementById('sidebar-close');
 
 sidebarToggle.addEventListener('click', () => {
