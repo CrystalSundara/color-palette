@@ -156,7 +156,7 @@ const actionCamera        = document.getElementById('action-camera');
 const actionGallery       = document.getElementById('action-gallery');
 const actionCancel        = document.getElementById('action-cancel');
 
-const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+const isMobile = () => navigator.maxTouchPoints > 0;
 
 function showUploadActionSheet() {
   uploadActionSheet.style.display = 'block';
@@ -180,6 +180,7 @@ imageUploadBtn.addEventListener('click', () => {
 
 actionCamera.addEventListener('click', () => {
   hideUploadActionSheet();
+  imageUpload.setAttribute('capture', 'environment');
   imageUpload.click();
 });
 
