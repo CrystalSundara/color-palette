@@ -1,8 +1,8 @@
 :root {
   --sidebar-bg:     #0F0E0B;
   --sidebar-text:   #E2DDD2;
-  --sidebar-muted:  #68625A;
-  --sidebar-border: #222019;
+  --sidebar-muted:  #AEA89E;
+  --sidebar-border: #38342C;
   --accent:         #B8895A;
   --bg:             #F2EDE5;
   --text:           #1C1A15;
@@ -169,13 +169,13 @@ body {
   flex: 1;
   min-width: 0;
   padding: 7px 9px;
-  border: 1px solid #26231C;
+  border: 1px solid #3E3A31;
   border-radius: 4px;
   font-size: 0.74rem;
   font-family: 'DM Mono', 'Fira Code', monospace;
   font-weight: 300;
   color: var(--sidebar-text);
-  background: #171410;
+  background: #181410;
   outline: none;
   letter-spacing: 0.05em;
   transition: border-color 0.15s;
@@ -249,7 +249,7 @@ body {
   width: 100%;
   padding: 7px 0;
   background: #171410;
-  border: 1px dashed #2C2924;
+  border: 1px dashed #4A453C;
   border-radius: 4px;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.71rem;
